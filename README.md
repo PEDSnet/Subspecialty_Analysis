@@ -16,4 +16,4 @@ following the PEDSnet "standard framework" structure, the code is divided into v
 
 The code structure is idiosyncratic to the PEDSnet implementation of the OHDSI standard.  If you are not using it, the essential code for creating the database tables that the .Rmd expects to see is in code/driver.R, with the specifications in the specs folder.  
 
-The primary author Mitchell Maltenfort, PhD, can be contacted at maltenform@chop.edu.  Further information is available at  [Google Scholar](https://scholar.google.com/citations?user=VM8Bq0sAAAAJ&hl=en)
+The primary author Mitchell Maltenfort, PhD, can be contacted at maltenform@chop.edu. 
