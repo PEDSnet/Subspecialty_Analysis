@@ -1,0 +1,208 @@
+﻿concept_id,concept_code,concept_name,vocabulary_id,specialty
+38004491,66,Rheumatology,Medicare Specialty,Pediatric Rheumatology
+38004452,7,Dermatology,Medicare Specialty,Dermatology
+33005,OMOP5117448,Psychiatry or Neurology,Provider,Child Neurology
+38004455,10,Gastroenterology,Medicare Specialty,Pediatric Gastroenterology
+38004458,13,Neurology,Medicare Specialty,Child Neurology
+38004462,17,Hospice And Palliative Care,Medicare Specialty,Hospice and Palliative Medicine
+903274,21,Clinical Cardiac Electrophysiology,Medicare Specialty,Pediatric Cardiology
+903256,23,Sports Medicine,Medicare Specialty,Sports Medicine
+38004468,25,Physical Medicine And Rehabilitation,Medicare Specialty,Rehabilitation
+38004472,29,Pulmonary Disease,Medicare Specialty,Pediatric Pulmonology
+38004448,3,Allergy / Immunology,Medicare Specialty,Allergy and Immunology
+38004479,39,Nephrology,Medicare Specialty,Pediatric Nephrology
+38004484,44,Infectious Disease,Medicare Specialty,Pediatric Infectious Diseases
+38004485,46,Endocrinology,Medicare Specialty,Pediatric Endocrinology
+38004451,6,Cardiology,Medicare Specialty,Pediatric Cardiology
+38004494,72,Pain Management,Medicare Specialty,Pain
+38004500,81,Critical care (intensivist),Medicare Specialty,Pediatric Critical Care Medicine
+38004501,82,Hematology,Medicare Specialty,Pediatric Hematology-Oncology
+38004502,83,Hematology / Oncology,Medicare Specialty,Pediatric Hematology-Oncology
+38004507,90,Medical Oncology,Medicare Specialty,Pediatric Hematology-Oncology
+38004510,93,Emergency Medicine,Medicare Specialty,Pediatric Emergency Medicine
+903275,C0,Sleep Medicine,Medicare Specialty,Sleep Medicine
+903276,C3,Interventional Cardiology,Medicare Specialty,Pediatric Cardiology
+903279,C7,Advanced Heart Failure and Transplant Cardiology,Medicare Specialty,Pediatric Cardiology
+903280,C8,Medical Toxicology,Medicare Specialty,Medical Toxicology
+38003824,204C00000X,Neuromusculoskeletal Sports Medicine,NUCC,Sports Medicine
+38003829,207K00000X,"Allopathic & Osteopathic Physicians, Allergy & Immunology",NUCC,Allergy and Immunology
+38003830,207KA0200X,Allergy,NUCC,Allergy and Immunology
+38003831,207KI0005X,"Allopathic & Osteopathic Physicians, Allergy & Immunology, Clinical & Laboratory Immunology",NUCC,Allergy and Immunology
+38003834,207LC0200X,"Allopathic & Osteopathic Physicians, Anesthesiology, Critical Care Medicine",NUCC,Pediatric Critical Care Medicine
+38003835,207LH0002X,Hospice and Palliative Anesthesiology,NUCC,Hospice and Palliative Medicine
+38003838,207N00000X,"Allopathic & Osteopathic Physicians, Dermatology",NUCC,Dermatology
+38003842,207NP0225X,"Allopathic & Osteopathic Physicians, Dermatology, Pediatric Dermatology",NUCC,Dermatology
+38003843,207NS0135X,Procedural Dermatology,NUCC,Dermatology
+38003844,207P00000X,"Allopathic & Osteopathic Physicians, Emergency Medicine",NUCC,Pediatric Emergency Medicine
+38003845,207PE0004X,"Allopathic & Osteopathic Physicians, Emergency Medicine, Emergency Medical Services",NUCC,Pediatric Emergency Medicine
+38003846,207PE0005X,Undersea and Hyperbaric Emergency Medicine,NUCC,Pediatric Emergency Medicine
+38003847,207PH0002X,Hospice and Palliative Emergency Medicine,NUCC,Hospice and Palliative Medicine
+38003848,207PP0204X,"Allopathic & Osteopathic Physicians, Emergency Medicine, Pediatric Emergency Medicine",NUCC,Pediatric Emergency Medicine
+38003849,207PS0010X,Emergency Sports Medicine,NUCC,Sports Medicine
+38003850,207PT0002X,Emergency Medical Toxicology,NUCC,Medical Toxicology
+38003852,207QA0000X,Adolescent Family Medicine,NUCC,Adolescent Medicine
+38003855,207QB0002X,Obesity (Bariatric) Family Medicine,NUCC,Obesity
+38003857,207QH0002X,Hospice and Palliative Family Medicine,NUCC,Hospice and Palliative Medicine
+38003858,207QS0010X,Sports Family Medicine,NUCC,Sports Medicine
+38003859,207QS1201X,Sleep Family Medicine,NUCC,Sleep Medicine
+38003861,207RA0000X,"Allopathic & Osteopathic Physicians, Internal Medicine, Adolescent Medicine",NUCC,Adolescent Medicine
+903237,207RA0001X,"Allopathic & Osteopathic Physicians, Internal Medicine, Advanced Heart Failure and Transplant Cardiology",NUCC,Pediatric Cardiology
+38003862,207RA0201X,"Allopathic & Osteopathic Physicians, Internal Medicine, Allergy & Immunology",NUCC,Allergy and Immunology
+38003864,207RB0002X,Obesity (Bariatric) Medicine,NUCC,Obesity
+38003865,207RC0000X,"Allopathic & Osteopathic Physicians, Internal Medicine, Cardiovascular Disease",NUCC,Pediatric Cardiology
+38003866,207RC0001X,"Allopathic & Osteopathic Physicians, Internal Medicine, Clinical Cardiac Electrophysiology",NUCC,Pediatric Cardiology
+38003867,207RC0200X,"Allopathic & Osteopathic Physicians, Internal Medicine, Critical Care Medicine",NUCC,Pediatric Critical Care Medicine
+38003868,207RE0101X,"Allopathic & Osteopathic Physicians, Internal Medicine, Endocrinology, Diabetes & Metabolism",NUCC,Pediatric Endocrinology
+38003869,207RG0100X,"Allopathic & Osteopathic Physicians, Internal Medicine, Gastroenterology",NUCC,Pediatric Gastroenterology
+38003871,207RH0000X,"Allopathic & Osteopathic Physicians, Internal Medicine, Hematology",NUCC,Pediatric Hematology-Oncology
+38003872,207RH0002X,"Allopathic & Osteopathic Physicians, Internal Medicine, Hospice and Palliative Medicine",NUCC,Hospice and Palliative Medicine
+38003873,207RH0003X,"Allopathic & Osteopathic Physicians, Internal Medicine, Hematology & Oncology",NUCC,Pediatric Hematology-Oncology
+38003875,207RI0001X,Clinical and Laboratory Immunology,NUCC,Allergy and Immunology
+38003876,207RI0008X,Hepatology,NUCC,Pediatric Gastroenterology
+38003877,207RI0011X,"Allopathic & Osteopathic Physicians, Internal Medicine, Interventional Cardiology",NUCC,Pediatric Cardiology
+38003878,207RI0200X,"Allopathic & Osteopathic Physicians, Internal Medicine, Infectious Disease",NUCC,Pediatric Infectious Diseases
+38003880,207RN0300X,"Allopathic & Osteopathic Physicians, Internal Medicine, Nephrology",NUCC,Pediatric Nephrology
+38003881,207RP1001X,"Allopathic & Osteopathic Physicians, Internal Medicine, Pulmonary Disease",NUCC,Pediatric Pulmonology
+38003882,207RR0500X,"Allopathic & Osteopathic Physicians, Internal Medicine, Rheumatology",NUCC,Pediatric Rheumatology
+38003883,207RS0010X,"Allopathic & Osteopathic Physicians, Internal Medicine, Sports Medicine",NUCC,Sports Medicine
+38003884,207RS0012X,"Allopathic & Osteopathic Physicians, Internal Medicine, Sleep Medicine",NUCC,Sleep Medicine
+38003885,207RT0003X,"Allopathic & Osteopathic Physicians, Internal Medicine, Transplant Hepatology",NUCC,Pediatric Transplant Hepatology
+38003886,207RX0202X,"Allopathic & Osteopathic Physicians, Internal Medicine, Medical Oncology",NUCC,Pediatric Hematology-Oncology
+38003887,207SC0300X,"Allopathic & Osteopathic Physicians, Medical Genetics, Clinical Cytogenetic",NUCC,Genetics
+38003888,207SG0201X,"Allopathic & Osteopathic Physicians, Medical Genetics, Clinical Genetics (M.D.)",NUCC,Genetics
+38003889,207SG0202X,"Allopathic & Osteopathic Physicians, Medical Genetics, Clinical Biochemical Genetics",NUCC,Genetics
+38003890,207SG0203X,"Allopathic & Osteopathic Physicians, Medical Genetics, Clinical Molecular Genetics",NUCC,Genetics
+38003892,207SM0001X,"Allopathic & Osteopathic Physicians, Medical Genetics, Molecular Genetic Pathology",NUCC,Genetics
+38003899,207VB0002X,Obesity (Bariatric) Obstetrics / Gynecology,NUCC,Obesity
+38003940,2080A0000X,"Allopathic & Osteopathic Physicians, Pediatrics, Adolescent Medicine",NUCC,Adolescent Medicine
+903246,2080B0002X,Obesity (Bariatric) Pediatric Medicine,NUCC,Obesity
+38003941,2080C0008X,"Allopathic & Osteopathic Physicians, Pediatrics, Child Abuse Pediatrics",NUCC,Child Abuse Pediatrics
+38003942,2080H0002X,Hospice and Palliative Pediatric Medicine,NUCC,Hospice and Palliative Medicine
+38003943,2080I0007X,Clinical and Laboratory Pediatrics Immunology,NUCC,Allergy and Immunology
+38003944,2080N0001X,"Allopathic & Osteopathic Physicians, Pediatrics, Neonatal-Perinatal Medicine",NUCC,Neonatal-Perinatal Medicine
+38003945,2080P0006X,"Allopathic & Osteopathic Physicians, Pediatrics, Developmental - Behavioral Pediatrics",NUCC,Developmental-Behavioral Pediatrics
+38003946,2080P0008X,Pediatric Neurodevelopmental Disabilities,NUCC,Developmental-Behavioral Pediatrics
+38003947,2080P0201X,Pediatric Allergy / Immunology,NUCC,Allergy and Immunology
+38003948,2080P0202X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Cardiology",NUCC,Pediatric Cardiology
+38003949,2080P0203X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Critical Care Medicine",NUCC,Pediatric Critical Care Medicine
+38003950,2080P0204X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Emergency Medicine",NUCC,Pediatric Emergency Medicine
+38003951,2080P0205X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Endocrinology",NUCC,Pediatric Endocrinology
+38003952,2080P0206X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Gastroenterology",NUCC,Pediatric Gastroenterology
+38003953,2080P0207X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Hematology-Oncology",NUCC,Pediatric Hematology-Oncology
+38003954,2080P0208X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Infectious Diseases",NUCC,Pediatric Infectious Diseases
+38003955,2080P0210X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Nephrology",NUCC,Pediatric Nephrology
+38003956,2080P0214X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Pulmonology",NUCC,Pediatric Pulmonology
+38003957,2080P0216X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Rheumatology",NUCC,Pediatric Rheumatology
+38003958,2080S0010X,Sports Pediatric Medicine,NUCC,Sports Medicine
+38003959,2080S0012X,Sleep Pediatrics,NUCC,Sleep Medicine
+38003960,2080T0002X,Pediatric Medical Toxicology,NUCC,Medical Toxicology
+38003961,2080T0004X,"Allopathic & Osteopathic Physicians, Pediatrics, Pediatric Transplant Hepatology",NUCC,Pediatric Transplant Hepatology
+38003962,208100000X,"Allopathic & Osteopathic Physicians, Physical Medicine & Rehabilitation",NUCC,Rehabilitation
+38003963,2081H0002X,Hospice and Palliative Rehabilitation Medicine,NUCC,Hospice and Palliative Medicine
+38003964,2081N0008X,Neuromuscular Rehabilitation Medicine,NUCC,Rehabilitation
+38003965,2081P0004X,Spinal Cord Injury Rehabilitation Medicine,NUCC,Rehabilitation
+38003966,2081P0010X,"Allopathic & Osteopathic Physicians, Physical Medicine & Rehabilitation, Pediatric Rehabilitation Medicine",NUCC,Rehabilitation
+903247,2081P0301X,Brain Injury Rehabilitation Medicine,NUCC,Rehabilitation
+38003967,2081P2900X,Pain Rehabilitation Medicine,NUCC,Rehabilitation
+38003968,2081S0010X,Sports Rehabilitation Medicine,NUCC,Rehabilitation
+903248,2083B0002X,Obesity (Bariatric) Preventive Medicine,NUCC,Obesity
+38003976,2083S0010X,Preventive Sports Medicine,NUCC,Sports Medicine
+38003977,2083T0002X,Preventive Medical Toxicology,NUCC,Medical Toxicology
+38003979,2084A0401X,"Allopathic & Osteopathic Physicians, Psychiatry & Neurology, Addiction Medicine",NUCC,Child Neurology
+903250,2084A2900X,Neurocritical Care Medicine,NUCC,Pediatric Critical Care Medicine
+38003980,2084B0002X,Obesity (Bariatric) Psychiatry,NUCC,Obesity
+43125860,2084B0040X,Behavioral Neurology and Neuropsychiatry,NUCC,Child Neurology
+38003984,2084N0008X,"Allopathic & Osteopathic Physicians, Psychiatry & Neurology, Neuromuscular Medicine",NUCC,Child Neurology
+38003985,2084N0400X,"Allopathic & Osteopathic Physicians, Psychiatry & Neurology, Neurology",NUCC,Child Neurology
+38003986,2084N0402X,"Allopathic & Osteopathic Physicians, Psychiatry & Neurology, Neurology with Special Qualifications in Child Neurology",NUCC,Child Neurology
+38003987,2084N0600X,"Allopathic & Osteopathic Physicians, Psychiatry & Neurology, Clinical Neurophysiology",NUCC,Child Neurology
+38003988,2084P0005X,"Allopathic & Osteopathic Physicians, Psychiatry & Neurology, Neurodevelopmental Disabilities",NUCC,Developmental-Behavioral Pediatrics
+38003992,2084P0804X,"Allopathic & Osteopathic Physicians, Psychiatry & Neurology, Child & Adolescent Psychiatry",NUCC,Child Neurology
+45756805,OMOP4821938,Pediatric Cardiology,ABMS,Pediatric Cardiology
+45756801,OMOP4821942,Pathology - Molecular Genetic,ABMS,Genetics
+45756799,OMOP4821944,Pathology - Hematology,ABMS,Pediatric Hematology-Oncology
+45756788,OMOP4821955,Neurology with Special Qualification in Child Neurology,ABMS,Child Neurology
+45756787,OMOP4821956,Neurodevelopmental Disabilities,ABMS,Developmental-Behavioral Pediatrics
+45756786,OMOP4821957,Neonatal-Perinatal Medicine,ABMS,Neonatal-Perinatal Medicine
+45756784,OMOP4821959,Medical Toxicology,ABMS,Medical Toxicology
+45756779,OMOP4821964,Interventional Cardiology,ABMS,Pediatric Cardiology
+45756778,OMOP4821965,Internal Medicine - Critical Care Medicine,,Pediatric Critical Care Medicine
+45756777,OMOP4821966,Hospice and Palliative Medicine,ABMS,Hospice and Palliative Medicine
+45756772,OMOP4821971,Epilepsy,ABMS,Child Neurology
+45756771,OMOP4821972,"Endocrinology, Diabetes and Metabolism",ABMS,Pediatric Endocrinology
+45756770,OMOP4821973,Emergency Medical Services,ABMS,Pediatric Emergency Medicine
+45756768,OMOP4821975,Developmental-Behavioral Pediatrics,ABMS,Developmental-Behavioral Pediatrics
+45756762,OMOP4821980,Clinical Molecular Genetics,ABMS,Genetics
+45756760,OMOP4821982,Clinical Genetics (MD),ABMS,Genetics
+45756759,OMOP4821983,Clinical Cytogenetics,ABMS,Genetics
+45756758,OMOP4821984,Clinical Cardiac Electrophysiology,ABMS,Pediatric Cardiology
+45756757,OMOP4821985,Clinical Biochemical Genetics,ABMS,Genetics
+45756755,OMOP4821987,Child Abuse Pediatrics,ABMS,Child Abuse Pediatrics
+45756754,OMOP4821988,Cardiovascular Disease,ABMS,Pediatric Cardiology
+45756753,OMOP4821989,Brain Injury Medicine,ABMS,Rehabilitation
+45756751,OMOP4821991,Anesthesiology Critical Care Medicine,ABMS,Pediatric Critical Care Medicine
+32416,OMOP4821995,Laboratory Genetics and Genomics,ABMS,Genetics
+32413,OMOP4821998,Clinical Molecular Genetics and Genomics,ABMS,Genetics
+32412,OMOP4821999,Clinical Genetics and Genomics (MD),ABMS,Genetics
+32411,OMOP4822000,Clinical Cytogenetics and Genomics,ABMS,Genetics
+45756747,OMOP4822001,Adolescent Medicine,ABMS,Adolescent Medicine
+45756749,OMOP4822003,Advanced Heart Failure and Transplant Cardiology,ABMS,Pediatric Cardiology
+45756767,OMOP4822005,Dermatopathology,ABMS,Dermatology
+45757046,OMOP4822006,Spinal Cord Injury Medicine,ABMS,Rehabilitation
+45756828,OMOP4822011,Sports Medicine,ABMS,Sports Medicine
+45756827,OMOP4822012,Sleep Medicine,ABMS,Sleep Medicine
+45756826,OMOP4822013,Reproductive Endocrinology / Infertility,ABMS,Pediatric Endocrinology
+45756820,OMOP4822019,Pediatric Transplant Hepatology,ABMS,Pediatric Transplant Hepatology
+45756818,OMOP4822021,Pediatric Rheumatology,ABMS,Pediatric Rheumatology
+45756817,OMOP4822022,Pediatric Rehabilitation Medicine,ABMS,Rehabilitation
+45756815,OMOP4822024,Pediatric Pulmonology,ABMS,Pediatric Pulmonology
+45756813,OMOP4822026,Pediatric Nephrology,ABMS,Pediatric Nephrology
+45756812,OMOP4822027,Pediatric Infectious Diseases,ABMS,Pediatric Infectious Diseases
+45756811,OMOP4822028,Pediatric Hematology-Oncology,ABMS,Pediatric Hematology-Oncology
+45756810,OMOP4822029,Pediatric Gastroenterology,ABMS,Pediatric Gastroenterology
+45756809,OMOP4822030,Pediatric Endocrinology,ABMS,Pediatric Endocrinology
+45756808,OMOP4822031,Pediatric Emergency Medicine,ABMS,Pediatric Emergency Medicine
+45756807,OMOP4822032,Pediatric Dermatology,ABMS,Dermatology
+45756806,OMOP4822033,Pediatric Critical Care Medicine,ABMS,Pediatric Critical Care Medicine
+45756831,OMOP4822034,Transplant Hepatology,ABMS,Pediatric Transplant Hepatology
+44777778,291,Paediatric Neuro-disability,HES Specialty,Rehabilitation
+44777805,180,Accident & emergency (A&E),HES Specialty,Pediatric Emergency Medicine
+44777793,191,Pain management (complex pain disorders requiring diagnosis and treatment by a specialist multi-professional team),HES Specialty,Pain
+44777798,192,Critical care medicine (also known as intensive care medicine) HOSPITAL EPISODE STATISTICS: Inpatient Data Dictionary,HES Specialty,Pediatric Critical Care Medicine
+44777764,251,Paediatric Gastroenterology,HES Specialty,Pediatric Gastroenterology
+44777765,252,Paediatric Endocrinology,HES Specialty,Pediatric Endocrinology
+44777766,253,Paediatric Clinical Haetology,HES Specialty,Pediatric Gastroenterology
+44777768,255,Paediatric Clinical Immunology and Allergy,HES Specialty,Allergy and Immunology
+44777769,256,Paediatric Infectious diseases,HES Specialty,Pediatric Infectious Diseases
+44777770,257,Paediatric Dermatology,HES Specialty,Dermatology
+44777771,258,Paediatric Respiratory Medicine,HES Specialty,Pediatric Pulmonology
+44777772,259,Paediatric Nephrology,HES Specialty,Pediatric Nephrology
+44777773,260,Paediatric Medical Oncology,HES Specialty,Pediatric Hematology-Oncology
+44777774,261,Paediatric Metabolic disease,HES Specialty,Pediatric Endocrinology
+44777723,301,Gastroenterology,HES Specialty,Pediatric Gastroenterology
+44777786,302,Endocrinology,HES Specialty,Pediatric Endocrinology
+44777679,306,Hepatology,HES Specialty,Pediartric Gastroenterology
+44777680,307,Diabetic medicine,HES Specialty,Pediatric Endocrinology
+44777800,308,Bone and marrow transplantation (previously part of clinical haematology),HES Specialty,Pediatric Hematology-Oncology
+44777801,309,Haemophilia (previously part of clinical haematology),HES Specialty,Pediatric Hematology-Oncology
+44777681,311,Clinical genetics,HES Specialty,Genetics
+44777698,312,Clinical cytogenetics and molecular genetics,HES Specialty,Genetics
+44777718,313,Clinical immunology and allergy (where there are no separate services for clinical immunology and allergy),HES Specialty,Allergy and Immunology
+44777809,314,Rehabilitation,HES Specialty,Rehabilitation
+44777682,315,Palliative medicine,HES Specialty,Hospice and Palliative Medicine
+44777719,316,Clinical immunology,HES Specialty,Allergy and Immunology
+44777720,317,Allergy,HES Specialty,Allergy and Immunology
+44777808,318,Intermediate care (encompasses a range of multidisciplinary services designed to safeguard independence by maximising rehabilitation and recovery),HES Specialty,Rehabilitation
+44777721,320,Cardiology,HES Specialty,Pediatric Cardiology
+44777779,321,Paediatric cardiology,HES Specialty,Pediatric Cardiology
+903263,325,Sport and exercise medicine,HES Specialty,Sports Medicine
+44777722,330,Dermatology,HES Specialty,Dermatology
+44777686,341,Respiratory Physiology (previously known as Sleep studies),HES Specialty,Sleep Medicine
+44777785,350,Infectious diseases,HES Specialty,Pediatric Infectious Diseases
+44777783,361,Nephrology,HES Specialty,Pediatric Nephrology
+44777803,370,Medical oncology,HES Specialty,Pediatric Hematology-Oncology
+44777725,400,Neurology,HES Specialty,Child Neurology
+44777791,410,Rheumatology,HES Specialty,Pediatric Rheumatology
+44777781,421,Paediatric neurology,HES Specialty,Child Neurology
+44777707,823,Haematology,HES Specialty,Pediatric Hematology-Oncology
+44777709,830,Immunopathology,HES Specialty,Allergy and Immunology

@@ -1,0 +1,25 @@
+concept_id,concept_code,concept_name,vocabulary_id
+0,No matching concept,No matching concept,None
+4304206,103705002,Patient status observation,SNOMED
+4029985,12866006,Administration of pneumococcal vaccine,SNOMED
+37108763,122541000119104,Vaccination needed,SNOMED
+4132855,127785005,Active or passive immunization,SNOMED
+443364,305058001,Patient encounter status,SNOMED
+4015724,170536002,Vaccination required,SNOMED
+432526,185903001,Needs influenza immunization,SNOMED
+4088016,243788004,Child examination,SNOMED
+4126323,304250009,Immunization status,SNOMED
+4203711,308273005,Follow-up status,SNOMED
+40480457,441742003,Evaluation finding,SNOMED
+4203722,308335008,Patient encounter procedure,SNOMED
+4151189,310577003,Pneumococcal immunization status,SNOMED
+4163708,399014008,"Administration of diphtheria, pertussis, and tetanus vaccine",SNOMED
+4132649,410620009,Well child visit,SNOMED
+40484102,442618008,Abnormal finding on evaluation procedure,SNOMED
+40479411,444433005,Suspected clinical finding,SNOMED
+4176720,49083007,Administration of viral vaccine,SNOMED
+44784283,698353005,Requires influenza virus vaccination,SNOMED
+37109774,723620004,Requires vaccination,SNOMED
+37312598,789035002,Requires vaccination against viral hepatitis,SNOMED
+45766222,703337007,"Requires diphtheria, tetanus and pertussis vaccination",SNOMED
+45766227,703344003,Requires varicella vaccination,SNOMED

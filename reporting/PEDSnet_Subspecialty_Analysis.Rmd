@@ -1,0 +1,1322 @@
+---
+title: "PEDSnet-Subspecialty-Report"
+author:
+  - Mitchell Maltenfort, Lead Data Scientist
+  - Andrea Allen, Code Reviewer
+  - Christopher Forrest, Lead Clinician Scientist
+  - Ellian Perrin, Clinician Scientist
+  - Chris Stille, Clinician Scientist
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+     df_print: paged
+     toc: yes
+  header-includes:
+   - \usepackage{array}
+   - \usepackage{hyperref}
+   - \hypersetup{linktoc=all}
+  word_document:
+    df_print: paged
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 8, fig.height = 8, fig.align = "center", dev = "jpeg", dpi = 300)
+
+# R packages I'm going to be using
+require(tibble)
+require(knitr)
+require(kableExtra)
+require(tidyverse)
+require(lubridate)
+require(scales)
+require(srcr)
+require(broom)
+
+# Default taken from R notebook behavior: when knitting, wd will always be location of notebook
+base_dir <- ".."
+Sys.setenv(PEDSNET_SKIP_REQUEST_EXECUTION = 1)
+Sys.setenv("PEDSNET_DB_SRC_CONFIG_BASE" = "srcr_pedsnet_v47") # local for me
+try(source("../site/run.R")) # May not be able to make db connection
+
+config("db_trace", FALSE)
+
+options(knitr.table.format = "latex")
+
+
+```
+
+\newpage
+
+# PURPOSE
+
+##	Primary objective
+Determine the proportion of study eligible children between the ages of 0 and 20 who used pediatric subspeciality care at least once in a given calendar year between 2010 and 2021 in any care setting (i.e., in an inpatient hospital, outpatient, emergency department, or community-based practice care setting), stratified by age group and sex.  
+
+##	Secondary objective
+For each pediatric subspecialty, determine the most common diagnoses among patients based on the number encounters in the outpatient or community-based practice care setting from 2010 to 2021.  
+
+\newpage
+
+# DATA SOURCE  
+
+## Overview of PEDSnet
+
+PEDsnet is a Clinical Research Network providing a database based on the Observational Health Data Science and Informatics (OHDSI) model and containing data from:
+
+* Children's Hospital Colorado
+* Children's Hospital of Philadelphia
+* Cincinnati Children's Hospital Medical Center
+* Nationwide Children's Hospital
+* Nemours Children's Health
+* Seattle Children's Hospital
+* Stanford Children's Health
+* Ann & Robert H. Lurie  Children's Hospital of Chicago
+
+
+The data is imported from individual hospital Electronic Health Record systems and transformed into the OHDSI Common Data Model to produce a structured, searchable database.  Hundreds of Data Quality checks are applied to ensure that the data is largely free of issues such as missing values, implausible values, unusually high or low counts in any visit category, and inconsistencies between years.  
+
+Within the OHDSI structure, vocabulary terms, called "concepts", (condition, specialty, etc) are each given fixed concept_id's which are integer keys that are used in querying.  The PEDSnet database vocabulary tables also include the source of the field (vocabulary_id), the name of the concept, and the code used in the original source.
+
+PEDSnet Database Version V.47 is used.  This code was written using R version 4.2.2 and the following packages:
+
+Package | Version
+------- | ---------------
+broom | 1.0.3
+DBI |  1.1.3
+dplyr | 1.1.0
+dbplyr | 2.3.0
+kableExtra | 1.3.4
+lubridate | 1.9.2
+magrittr | 2.0.3
+readr | 2.1.4
+rlang | 1.0.6
+scales | 1.2.1
+srcr | 1.1.0
+tibble | 3.1.8
+tidyr | 1.3.0
+
+
+After the original code was written, code review was performed to check for consistency and efficiency. Appropriate revisions were made to improve performance of the report generation.  
+
+Code is available at the public GitHub repository https://github.com/PEDSnet/Subspecialty_Analysis
+
+## Denominator
+Within the PEDSnet database, we select all patients with an outpatient visit (based on visit concept id = 9202 as per OHDSI conventions) in the time period Jan 1, 2010 - Dec 31, 2021, where the patient is >= 0 and < 21 years old,  and where the specialty concept id for provider or care site is one of the following two codes:
+
+|  concept_id | concept_code  | concept_name  |vocabulary_id  |   
+|---|---|---|---|
+|  38003851 |   207Q00000X|  Family Medicine | National Uniform Claim Committee (NUCC) |
+| 2000000063 | OMOP generated  | General Pediatrics |PEDSnet   |
+
+We also save inpatient (including emergency department and observation) visits for patients from the outpatient cohort defined above, using the same year ranges (2010-2021) and age ranges (0-20 yo) for use in other denominators.
+
+Patients enter a denominator for a calendar year based on having a qualifying visit (as defined above) in that year or the preceding year.  So the denominator for 2011 is the distinct patients with a general outpatient visit in either 2010 or 2011.
+
+Patients are broken into subgroups based on the following factors:
+
+
+* Gender (Male or Female).
+* Age (based on age at entry into denominator for that year).  
+   + <1 (infancy). 
+   + 1 – 4 (early childhood). 
+   + 5 – 11 (middle childhood).    
+   + 12 – 17 (adolescence). 
+   + 18 – 20 (young adulthood).  
+* Insurance (hierarchical)  
+    + If the patient is ever on public insurance (Medicare, Medicaid, other Public) in their general outpatient visits, they are listed as "Public". 
+    + Otherwise if they ever listed as Private/Commerical insurance in their general outpatient visits, they are listed as "Private". 
+    + Otherwise they are listed as "Unknown/Self-Pay". 
+* Race/Ethnicity
+    + If the patient ethnicity is listed as Hispanic, they are listed as Hispanic. 
+    + Otherwise if they are Asian or Pacific Islander, they are listed as Asian/PI. 
+    + Not given and unknown are combined as "Unknown"
+    + Otherwise they are listed as race in the race_concept_id field, with the "non-Hispanic" modifier. 
+
+## Numerator
+Within the PEDSnet database, we select all patients with an outpatient, emergency, inpatient or observation visit in the years 2010-2021, where the patient is >=0 and < 21 years old,  and where the specialty concept id  is one of the concept_id's associated with the specific subspecialties of interest.  Depending on the specific analysis, the numerator may be count of distinct patients with outpatient, inpatient/observation, inpatient/observation/emergency or all in-person visits.  
+
+Specialty visits are linked to the denominator table by reference year -- so the numerator for 2010, for example, is linked to the denominator based on distinct patients in 2009 and 2010, although the specialty visits are in 2010.  
+
+\newpage
+
+# RESULTS
+
+## Table 1: Attrition
+
+
+```{r table1_attrition, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = ''}
+# get payer for the cohort
+
+
+
+attrition <-
+  results_tbl("attrition_tbl") %>%
+  collect_new()
+
+
+
+attrition %>%
+  dplyr::select(-step) %>%
+  mutate(cohort = c("All Patients in Database", "Patients with Qualifying General Outpatient Visit")) %>%
+  kable(format.args = list(big.mark = ","), booktabs = T, longtable = T) %>%
+  kable_styling()
+```
+
+\newpage
+
+## Table 2: Distribution of patients in sample
+
+
+
+```{r table2, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = '', results='asis'}
+# tally up descriptive table for the study
+# age as as first year entered and as category for first year entered
+
+denominator_p1 <- results_tbl("final_denominator") %>%
+  inner_join(results_tbl("final_cohort")) %>%
+  compute_new()
+
+denominator_n <-
+  denominator_p1 %>%
+  group_by(visit_year, gender_concept_name, eth_cat, payer_class) %>%
+  summarise(n = n()) %>%
+  collect_new()
+
+denominator_n <-
+  denominator_p1 %>%
+  group_by(gender_concept_name, eth_cat, payer_class) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new() %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(denominator_n)
+
+N <-
+  results_tbl("final_cohort") %>%
+  summarise(n = n()) %>%
+  pull()
+
+age_tally_tbl <-
+  denominator_p1 %>%
+  group_by(person_id) %>%
+  summarise(first_age = min(age_yr), last_age = max(age_yr), n_ages = n_distinct(age_yr)) %>%
+  mutate(range_ages = last_age - first_age + 1) %>%
+  pivot_longer(first_age:range_ages) %>%
+  group_by(name) %>%
+  summarise(m = mean(value), s = sd(value)) %>%
+  collect_new() %>%
+  mutate(my_str = sprintf("%0.2f (%0.2f)", m, s)) %>%
+  mutate(category = c("Age at entry, years", "Distinct years in cohort by ageAREF", "Last age seen, years", "Duration in cohort, yearsBREF"))
+
+
+age_tbl <-
+  tibble(age_yr = 0:20, age_cat = c("<1 (infants)", rep("1 – 4 (early childhood)", 4), rep("5 – 11 (middle childhood)", 7), rep("12 – 17 (adolescence)", 6), rep("18 – 20 (young adulthood)", 3))) %>%
+  mutate(age_cat = as_factor(age_cat)) %>%
+  mutate(dummy = 1)
+
+
+age_cat_tally <-
+  denominator_p1 %>%
+  group_by(person_id) %>%
+  summarise(age_yr = min(age_yr)) %>%
+  mutate(dummy = 1) %>%
+  inner_join(age_tbl, copy = TRUE) %>%
+  group_by(age_cat) %>%
+  summarise(n = n()) %>%
+  collect_new() %>%
+  inner_join(age_tbl %>% distinct(age_cat)) %>%
+  mutate(category = factor(age_cat, levels = levels(age_tbl$age_cat)), my_str = sprintf("%s (%s)", format(n, big.mark = ","), scales::percent(n * 1.0 / N, accuracy = 0.1))) %>%
+  arrange(category)
+
+
+
+gender_tally_tbl <-
+  results_tbl("final_cohort") %>%
+  group_by(gender_concept_name) %>%
+  summarise(n = n()) %>%
+  collect_new() %>%
+  mutate(my_str = sprintf("%s (%s)", format(n, big.mark = ","), scales::percent(n * 1.0 / N, accuracy = 0.1))) %>%
+  mutate(category = str_to_title(gender_concept_name))
+
+race_tally_tbl <-
+  results_tbl("final_cohort") %>%
+  group_by(eth_cat) %>%
+  summarise(n = n()) %>%
+  collect_new() %>%
+  mutate(my_str = sprintf("%s (%s)", format(n, big.mark = ","), scales::percent(n * 1.0 / N, accuracy = 0.1))) %>%
+  mutate(category = eth_cat) %>%
+  arrange(eth_cat)
+
+
+payer_tally_tbl <-
+  results_tbl("final_cohort") %>%
+  group_by(payer_class) %>%
+  summarise(n = n()) %>%
+  collect_new() %>%
+  mutate(my_str = sprintf("%s (%s)", format(n, big.mark = ","), scales::percent(n * 1.0 / N, accuracy = 0.1))) %>%
+  mutate(category = payer_class) %>%
+  arrange(payer_class)
+
+entry_year_tbl <-
+  denominator_p1 %>%
+  group_by(person_id) %>%
+  summarise(first_visit = min(visit_year)) %>%
+  group_by(first_visit) %>%
+  summarise(n = n()) %>%
+  collect_new() %>%
+  mutate(my_str = sprintf("%s (%s)", format(n, big.mark = ","), scales::percent(n * 1.0 / N, accuracy = 0.1))) %>%
+  arrange(first_visit) %>%
+  mutate(category = as.character(first_visit))
+
+
+desc_tbl <-
+  age_tally_tbl[1, ] %>%
+  bind_rows(age_cat_tally) %>%
+  bind_rows(age_tally_tbl[2:4, ]) %>%
+  bind_rows(gender_tally_tbl) %>%
+  bind_rows(race_tally_tbl) %>%
+  bind_rows(payer_tally_tbl) %>%
+  bind_rows(entry_year_tbl)
+
+
+tmp <- desc_tbl %>%
+  dplyr::select(category, my_str) %>%
+  kable(col.names = c("Group", "mean (SD) or n (%)"), booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down")) %>%
+  pack_rows("Gender", 10, 11) %>%
+  pack_rows("Race/Ethnicity", 12, 17) %>%
+  pack_rows("Insurer", 18, 20) %>%
+  pack_rows("Entry Year", 21, 31) %>%
+  footnote(alphabet = c("Individual years where patient contributes visits to general outpatient denominator", "Elapsed time from first year seen to last year seen in general outpatient denominator"), threeparttable = TRUE)
+
+# adapted from https://stackoverflow.com/questions/62597592/add-a-superscript-to-one-cell-of-a-table-formatted-with-kable-kableextra-for-r
+tmp <- str_replace(tmp, "AREF", "$^{a}$")
+tmp <- str_replace(tmp, "BREF", "$^{b}$")
+
+knitr::asis_output(tmp)
+```
+
+
+\newpage
+
+## Table 3: Number of children in denominator stratified by age group, sex, and insurer 
+
+This is based on denominator, all patients having 1 + general pediatrics visit in the calendar year or the prior yer
+
+Age bracket is based on age at the beginning of the 2-year denominator period
+  
+
+
+
+```{r table3, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = '', results='asis'}
+years_tbl <-
+  tibble(years = 2011:2021) %>%
+  mutate(dummy = 1)
+
+
+
+cat("\n\n## Table 3A: Number of children in denominator stratified by age group and sex\n\n")
+cat("\n\nNote: since age varies by year, patients can be in multiple age brackets and so age brackets will not sum up to actual number of patients\n\n")
+
+
+denom_count <-
+  denominator_p1 %>%
+  group_by(age_yr, gender_concept_name, visit_year) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new() %>%
+  mutate(dummy = 1) %>%
+  inner_join(age_tbl) %>%
+  group_by(gender_concept_name, visit_year, age_cat) %>%
+  summarise(n = sum(n))
+
+denom_count <-
+  denominator_p1 %>%
+  mutate(dummy = 1) %>%
+  inner_join(age_tbl, copy = TRUE) %>%
+  group_by(gender_concept_name, age_cat) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new() %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(denom_count) %>%
+  mutate(age_cat = factor(age_cat, levels = levels(age_tbl$age_cat)))
+
+
+denom_count %>%
+  arrange(visit_year, gender_concept_name, age_cat) %>%
+  pivot_wider(names_from = age_cat, values_from = n) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  dplyr::select(visit_year, gender_concept_name, everything()) %>%
+  mutate(gender_concept_name = str_to_title(gender_concept_name)) %>%
+  kable(col.names = c("Year", "Gender", levels(age_tbl$age_cat)), format.args = list(big.mark = ","), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position"))
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 3B: Number of children in denominator stratified by age group\n\n")
+cat("\n\nNote: since age varies by year, patients can be in multiple age brackets and so age brackets will not sum up to actual number of patients\n\n")
+
+
+denom_count <-
+  denominator_p1 %>%
+  group_by(age_yr, visit_year) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new() %>%
+  mutate(dummy = 1) %>%
+  inner_join(age_tbl) %>%
+  group_by(visit_year, age_cat) %>%
+  summarise(n = sum(n))
+
+
+denom_count <-
+  denominator_p1 %>%
+  mutate(dummy = 1) %>%
+  inner_join(age_tbl, copy = TRUE) %>%
+  group_by(age_cat) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new() %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(denom_count) %>%
+  mutate(age_cat = factor(age_cat, levels = levels(age_tbl$age_cat)))
+
+
+denom_count %>%
+  arrange(visit_year, age_cat) %>%
+  pivot_wider(names_from = age_cat, values_from = n) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  kable(col.names = c("Year", levels(age_tbl$age_cat)), format.args = list(big.mark = ","), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position"))
+
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 3C: Number of children in denominator stratified by sex\n\n")
+
+
+denom_count <-
+  denominator_n %>%
+  group_by(gender_concept_name, visit_year) %>%
+  summarise(n = sum(n))
+
+
+
+denom_count %>%
+  arrange(gender_concept_name, visit_year) %>%
+  pivot_wider(names_from = gender_concept_name, values_from = n) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  kable(col.names = c("visit year", "Female", "Male"), format.args = list(big.mark = ","), booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header"), font_size = 9)
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 3D: Number of children in denominator stratified by insurer\n\n")
+
+
+denom_count <-
+  denominator_n %>%
+  group_by(payer_class, visit_year) %>%
+  summarise(n = sum(n))
+
+
+denom_count %>%
+  arrange(payer_class, visit_year) %>%
+  pivot_wider(names_from = payer_class, values_from = n) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  kable(col.names = c("visit year", unique(denom_count$payer_class)), format.args = list(big.mark = ","), booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position"))
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 3E: Number of children in denominator stratified by race/ethnicity\n\n")
+
+denom_count <-
+  denominator_n %>%
+  group_by(eth_cat, visit_year) %>%
+  summarise(n = sum(n))
+
+denom_count %>%
+  arrange(eth_cat, visit_year) %>%
+  pivot_wider(names_from = eth_cat, values_from = n) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  kable(col.names = c("visit year", unique(denom_count$eth_cat)), format.args = list(big.mark = ","), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position"))
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Figure 1: Population pyramid for age vs insurer\n\n")
+cat("\n\nNumbers normalized by count of distinct patients assigned to insurer type.  Patients seen at different ages are assigned to each age \n\n")
+
+age_insurance_tbl <-
+  denominator_p1 %>%
+  filter(payer_class %in% c("Public", "Private")) %>%
+  group_by(payer_class, age_yr) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new()
+
+age_insurance_tbl <-
+  results_tbl("final_cohort") %>%
+  group_by(payer_class) %>%
+  summarise(N = n()) %>%
+  collect_new() %>%
+  inner_join(age_insurance_tbl) %>%
+  mutate(prop = n * 1.0 / N)
+
+age_insurance_tbl %>%
+  ggplot(aes(x = age_yr, fill = payer_class, y = ifelse(payer_class == "Private", -prop * 100, prop * 100))) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = abs) +
+  labs(x = "Age(years)", y = "Number of distinct patients (as % of total)", fill = "Payer") +
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8)) +
+  coord_cartesian(ylim = c(-40, 40)) +
+  expand_limits(y = c(-40, 40)) +
+  coord_flip()
+```
+
+\newpage
+
+## Table 4: Proportion of children receiving outpatient, inpatient or emerency care from a pediatric subspecialist in an outpatient department or community-based practice, overall and stratified  by calendar year  
+
+
+```{r table4, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = '', results='asis'}
+# get specialist visits, drop "Pain" specialty which is not used
+# also drop a list of problematic providers
+
+numerator_p1 <-
+  results_tbl("final_specialist_outpatient") %>%
+  inner_join(denominator_p1) %>%
+  compute_new()
+
+numerator_n <-
+  numerator_p1 %>%
+  group_by(gender_concept_name, eth_cat, payer_class, visit_year) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new()
+
+numerator_n <-
+  numerator_p1 %>%
+  group_by(gender_concept_name, eth_cat, payer_class) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new() %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(numerator_n) %>%
+  ungroup()
+
+numerator_overall <-
+  dplyr::union(results_tbl("final_specialist_outpatient"), results_tbl("final_specialist_other")) %>%
+  inner_join(denominator_p1) %>%
+  compute_new()
+
+
+numerator_overall_n <-
+  numerator_overall %>%
+  group_by(gender_concept_name, eth_cat, payer_class, visit_year) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new()
+
+numerator_overall_n <-
+  numerator_overall %>%
+  group_by(gender_concept_name, eth_cat, payer_class) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  mutate(visit_year = 0) %>%
+  collect_new() %>%
+  bind_rows(numerator_overall_n) %>%
+  ungroup()
+
+numerator_specialty_n <-
+  numerator_p1 %>%
+  group_by(specialty, payer_class, visit_year) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new()
+
+
+numerator_specialty_n <-
+  numerator_p1 %>%
+  group_by(specialty, payer_class) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  collect_new() %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(numerator_specialty_n) %>%
+  ungroup()
+
+
+denom_count <-
+  denominator_n %>%
+  group_by(visit_year) %>%
+  summarise(denom = sum(n))
+
+denom_by_insurer <-
+  denominator_n %>%
+  filter(visit_year == 0) %>%
+  group_by(payer_class) %>%
+  summarise(denom = sum(n)) %>%
+  arrange(payer_class)
+
+
+denom_by_race <-
+  denominator_n %>%
+  filter(visit_year == 0) %>%
+  group_by(eth_cat) %>%
+  summarise(denom = sum(n)) %>%
+  arrange(eth_cat)
+
+num_count <-
+  numerator_n %>%
+  group_by(visit_year) %>%
+  summarise(num = sum(n))
+
+
+num_overall_count <-
+  numerator_overall_n %>%
+  group_by(visit_year) %>%
+  summarise(num = sum(n))
+
+num_by_insurer <-
+  numerator_n %>%
+  filter(visit_year == 0) %>%
+  group_by(payer_class) %>%
+  summarise(num = sum(n)) %>%
+  arrange(payer_class)
+
+
+num_overall_by_insurer <-
+  numerator_overall_n %>%
+  filter(visit_year == 0) %>%
+  group_by(payer_class) %>%
+  summarise(num = sum(n)) %>%
+  arrange(payer_class)
+
+
+num_by_race <-
+  numerator_n %>%
+  filter(visit_year == 0) %>%
+  group_by(eth_cat) %>%
+  summarise(num = sum(n)) %>%
+  arrange(eth_cat)
+
+
+num_overall_by_race <-
+  numerator_overall_n %>%
+  filter(visit_year == 0) %>%
+  group_by(eth_cat) %>%
+  summarise(num = sum(n)) %>%
+  arrange(eth_cat)
+
+
+spec_count <-
+  numerator_p1 %>%
+  group_by(person_id, visit_year) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  group_by(visit_year) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new()
+
+spec_count <-
+  numerator_p1 %>%
+  group_by(person_id) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new() %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(spec_count)
+
+spec_overall_count <-
+  numerator_overall %>%
+  group_by(person_id, visit_year) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  group_by(visit_year) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new()
+
+spec_overall_count <-
+  numerator_overall %>%
+  group_by(person_id) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new() %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(spec_overall_count)
+
+spec_by_insurer <-
+  numerator_p1 %>%
+  group_by(person_id, payer_class) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  group_by(payer_class) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new() %>%
+  arrange(payer_class)
+
+
+spec_by_insurer <-
+  spec_count %>%
+  filter(visit_year == 0) %>%
+  dplyr::select(-visit_year) %>%
+  mutate(payer_class = "Overall") %>%
+  bind_rows(spec_by_insurer) %>%
+  arrange(payer_class)
+
+spec_overall_insurer <-
+  numerator_overall %>%
+  group_by(person_id, payer_class) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  group_by(payer_class) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new() %>%
+  arrange(payer_class)
+
+
+spec_overall_insurer <-
+  spec_overall_count %>%
+  filter(visit_year == 0) %>%
+  dplyr::select(-visit_year) %>%
+  mutate(payer_class = "Overall") %>%
+  bind_rows(spec_overall_insurer) %>%
+  arrange(payer_class)
+
+spec_by_race <-
+  numerator_p1 %>%
+  group_by(person_id, eth_cat) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  group_by(eth_cat) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new() %>%
+  arrange(eth_cat)
+
+
+spec_by_race <-
+  spec_count %>%
+  filter(visit_year == 0) %>%
+  dplyr::select(-visit_year) %>%
+  mutate(eth_cat = "Overall") %>%
+  bind_rows(spec_by_race) %>%
+  arrange(eth_cat)
+
+spec_overall_race <-
+  numerator_overall %>%
+  group_by(person_id, eth_cat) %>%
+  summarise(num = n_distinct(specialty)) %>%
+  mutate(has_multi = case_when(num > 1 ~ 1, TRUE ~ 0)) %>%
+  group_by(eth_cat) %>%
+  summarise(n_multi = sum(has_multi), mean_spec = mean(num), sd_spec = sd(num)) %>%
+  collect_new() %>%
+  arrange(eth_cat)
+
+
+spec_overall_race <-
+  spec_overall_count %>%
+  filter(visit_year == 0) %>%
+  dplyr::select(-visit_year) %>%
+  mutate(eth_cat = "Overall") %>%
+  bind_rows(spec_overall_race) %>%
+  arrange(eth_cat)
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 4A: Proportion of children receiving outpatient care from a pediatric subspecialist, overall and stratified by calendar year\n\n")
+num_count %>%
+  inner_join(denom_count) %>%
+  inner_join(spec_count) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(multi_str = sprintf("%s (%s)", format(n_multi, big.mark = ","), scales::percent(n_multi * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(multi_str = ifelse(n_multi >= 11, multi_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(spec_str = sprintf("%0.2f (%0.2f)", mean_spec, sd_spec)) %>%
+  arrange(visit_year) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  dplyr::select(visit_year, denom, my_str, multi_str, spec_str) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Denominator", "Any Outpatient Specialty Visit", "Seeing > 1 Specialist", "Average # of Specialists seen (if any)"), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit that year or prior year, or all patients in that set for overall", "Numerator in 'Seeing > 1 Specialist' is all patients in denominator who also had at least one specialist outpatient visit that year"), threeparttable = TRUE)
+
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 4B: Proportion of children receiving outpatient, inpatient or emergency care from a pediatric subspecialist, overall and stratified by calendar year\n\n")
+
+num_overall_count %>%
+  inner_join(denom_count) %>%
+  inner_join(spec_overall_count) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(multi_str = sprintf("%s (%s)", format(n_multi, big.mark = ","), scales::percent(n_multi * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(multi_str = ifelse(n_multi >= 11, multi_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(spec_str = sprintf("%0.2f (%0.2f)", mean_spec, sd_spec)) %>%
+  arrange(visit_year) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  dplyr::select(visit_year, denom, my_str, multi_str, spec_str) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Denominator", "Any Outpatient Specialty Visit", "Seeing > 1 Specialist", "Average # of Specialists seen (if any)"), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit that year or prior year, or all patients in that set for overall", "Numerator in 'Seeing > 1 Specialist' is all patients in denominator who also had at least one specialist outpatient, inpatient or emergency departent visit that year"), threeparttable = TRUE)
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 4C: Proportion of children receiving outpatient care from a pediatric subspecialist in an outpatient department or community-based practice, stratified by insurer\n\n")
+
+num_by_insurer %>%
+  inner_join(denom_by_insurer) %>%
+  inner_join(spec_by_insurer) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(multi_str = sprintf("%s (%s)", format(n_multi, big.mark = ","), scales::percent(n_multi * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(multi_str = ifelse(n_multi >= 11, multi_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(spec_str = sprintf("%0.2f (%0.2f)", mean_spec, sd_spec)) %>%
+  arrange(payer_class) %>%
+  dplyr::select(payer_class, denom, my_str, multi_str, spec_str) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Denominator", "Any Outpatient Specialty Visit", "Seeing > 1 Specialist", "Average # of Specialists seen (if any)"), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit who were members of that insurer group", "Numerator is all patients in denominator who also had at least one specialist outpatient visit"), threeparttable = TRUE)
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 4D: Proportion of children receiving outpatient, inpatient or emergency care from a pediatric subspecialist, stratified by insurer\n\n")
+
+num_overall_by_insurer %>%
+  inner_join(denom_by_insurer) %>%
+  inner_join(spec_overall_insurer) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(multi_str = sprintf("%s (%s)", format(n_multi, big.mark = ","), scales::percent(n_multi * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(multi_str = ifelse(n_multi >= 11, multi_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(spec_str = sprintf("%0.2f (%0.2f)", mean_spec, sd_spec)) %>%
+  arrange(payer_class) %>%
+  dplyr::select(payer_class, denom, my_str, multi_str, spec_str) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Denominator", "Any Outpatient Specialty Visit", "Seeing > 1 Specialist", "Average # of Specialists seen (if any)"), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit who were members of that insurer group", "Numerator is all patients in denominator who also had at least one specialist outpatient, inpatient or emergency encounter"), threeparttable = TRUE)
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 4E: Proportion of children receiving outpatient care from a pediatric subspecialist, stratified by race/ethnicity\n\n")
+
+num_by_race %>%
+  inner_join(denom_by_race) %>%
+  inner_join(spec_by_race) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(multi_str = sprintf("%s (%s)", format(n_multi, big.mark = ","), scales::percent(n_multi * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(multi_str = ifelse(n_multi >= 11, multi_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(spec_str = sprintf("%0.2f (%0.2f)", mean_spec, sd_spec)) %>%
+  arrange(eth_cat) %>%
+  dplyr::select(eth_cat, denom, my_str, multi_str, spec_str) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Denominator", "Any Outpatient Specialty Visit", "Seeing > 1 Specialist", "Average # of Specialists seen (if any)"), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit and who were members of that race/ethnicity", "Numerator is all patients in denominator who also had at least one specialist outpatient visit"), threeparttable = TRUE)
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Table 4F: Proportion of children receiving outpatient, inpatient or emergency care from a pediatric subspecialist, stratified by race/ethnicity\n\n")
+
+num_overall_by_race %>%
+  inner_join(denom_by_race) %>%
+  inner_join(spec_overall_race) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(multi_str = sprintf("%s (%s)", format(n_multi, big.mark = ","), scales::percent(n_multi * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(multi_str = ifelse(n_multi >= 11, multi_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(spec_str = sprintf("%0.2f (%0.2f)", mean_spec, sd_spec)) %>%
+  arrange(eth_cat) %>%
+  dplyr::select(eth_cat, denom, my_str, multi_str, spec_str) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Denominator", "Any Outpatient Specialty Visit", "Seeing > 1 Specialist", "Average # of Specialists seen (if any)"), booktabs = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down", "hold_position")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit and who were members of that race/ethnicity", "Numerator is all patients in denominator who also had at least one specialist outpatient, inpatient or emergency encounter"), threeparttable = TRUE)
+
+cat("\n\n\\newpage\n\n")
+
+cat("\n\n## Table 4G: Proportion of children receiving new and ongoing pediatric subspecialist referrals, overall and stratified by subspecialty or calendar year\n\n")
+
+
+
+numerator_new_n <-
+  results_tbl("final_specialist_outpatient") %>%
+  group_by(person_id, specialty) %>%
+  summarise(visit_year = min(visit_year)) %>%
+  inner_join(denominator_p1) %>%
+  group_by(visit_year, specialty) %>%
+  summarise(n_new = n()) %>%
+  collect_new() %>%
+  arrange(specialty)
+
+numerator_new_n <-
+  results_tbl("final_specialist_outpatient") %>%
+  group_by(person_id) %>%
+  summarise(visit_year = min(visit_year)) %>%
+  inner_join(denominator_p1) %>%
+  group_by(visit_year) %>%
+  summarise(n_new = n()) %>%
+  collect_new() %>%
+  mutate(specialty = "Any Specialty") %>%
+  bind_rows(numerator_new_n) %>%
+  mutate(specialty = as_factor(specialty))
+
+numerator_new_n <-
+  numerator_new_n %>%
+  group_by(specialty) %>%
+  summarise(n_new = sum(n_new)) %>%
+  mutate(visit_year = 0) %>%
+  bind_rows(numerator_new_n)
+
+numerator_total_n <-
+  numerator_specialty_n %>%
+  group_by(specialty, visit_year) %>%
+  summarise(n = sum(n)) %>%
+  dplyr::union_all(numerator_n %>% group_by(visit_year) %>% summarise(n = sum(n)) %>% mutate(specialty = "Any Specialty"))
+
+denom_count <-
+  denominator_n %>%
+  group_by(visit_year) %>%
+  summarise(denom = sum(n))
+
+
+numerator_new_n %>%
+  inner_join(numerator_total_n) %>%
+  mutate(num_ongoing = n - n_new) %>%
+  inner_join(denom_count) %>%
+  mutate(rate_new = n_new * 1.0 / denom, rate_ongoing = num_ongoing * 1.0 / denom) %>%
+  mutate(new_str = sprintf("%s (%s)", format(n_new, big.mark = ","), scales::percent(rate_new, accuracy = 0.1))) %>%
+  mutate(ongoing_str = sprintf(
+    "%s (%s)",
+    format(num_ongoing, big.mark = ","), scales::percent(rate_ongoing, accuracy = 0.1)
+  )) %>%
+  mutate(new_str = ifelse(n_new < 11, "<11", new_str)) %>%
+  mutate(ongoing_str = ifelse(num_ongoing < 11, "<11", ongoing_str)) %>%
+  dplyr::select(specialty, visit_year, new_str, ongoing_str) %>%
+  mutate(specialty = relevel(as.factor(specialty), "Any Specialty")) %>%
+  arrange(specialty, visit_year) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  kable(col.names = c("Specialty", "Visit Year", "New Specialty Visits", "Ongoing Specialty Visits"), booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit that year or year prior (or all in set for overall)", "Numerator is all patients in denominator who also had at least one specialist outpatient visit to that particular subspecialty, divided into new (if no corresponding visit in prior years) or ongoing"), threeparttable = TRUE)
+
+
+
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Figure 2: Specialty outpatient visits by Insurance Type\n\n")
+cat("\n\nAll specialist visits dip in 2020 probably due to Covid.\n\n")
+
+denom_count <-
+  denominator_n %>%
+  filter(visit_year > 0) %>%
+  group_by(payer_class, visit_year) %>%
+  summarise(denom = sum(n)) %>%
+  arrange(payer_class)
+
+num_count <-
+  numerator_n %>%
+  group_by(payer_class, visit_year) %>%
+  summarise(num = sum(n)) %>%
+  arrange(payer_class)
+
+insurer_rates <-
+  num_count %>%
+  inner_join(denom_count)
+
+insurer_rates <-
+  insurer_rates %>%
+  group_by(visit_year) %>%
+  summarise(denom = sum(denom), num = sum(num)) %>%
+  mutate(payer_class = "Overall") %>%
+  bind_rows(insurer_rates) %>%
+  mutate(rate = num * 1.0 / denom)
+
+
+cols <- c("Overall" = "black", "Private" = "#F8766D", "Public" = "#00BA38", "Unknown/Self-Pay" = "#619CFF")
+insurer_rates %>%
+  filter(payer_class != "Unknown/Self-Pay") %>%
+  ggplot(aes(x = visit_year, y = rate, color = payer_class)) +
+  geom_line(linewidth = 1) +
+  theme_bw() +
+  scale_y_continuous(label = scales::percent) +
+  theme(legend.position = c(0.2, 0.3)) +
+  expand_limits(y = 0) +
+  labs(y = "% of patients getting any outpatient specialist referral", color = "Insurer", x = "Year") +
+  scale_color_manual(values = cols)
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Figure 3: Specialist use trends from Table 4\n\n")
+
+denom_count <-
+  denominator_n %>%
+  filter(visit_year > 0) %>%
+  group_by(visit_year) %>%
+  summarise(denom = sum(n))
+
+num_count <-
+  numerator_n %>%
+  group_by(visit_year) %>%
+  summarise(num = sum(n))
+
+num_count %>%
+  inner_join(denom_count) %>%
+  inner_join(spec_count) %>%
+  filter(visit_year > 0) %>%
+  dplyr::select(visit_year, denom, any = num, multiple = n_multi) %>%
+  pivot_longer(any:multiple) %>%
+  mutate(rate = value * 1.0 / denom) %>%
+  ggplot(aes(x = visit_year, y = rate, color = name)) +
+  geom_line(linewidth = 1) +
+  theme_bw() +
+  scale_y_continuous(label = scales::percent) +
+  labs(y = "Proportion of patients", x = "Year") +
+  theme(legend.position = c(0.2, 0.5)) +
+  expand_limits(y = 0) +
+  scale_color_discrete(name = "Usage", labels = c("Patients with any visit", "Patients with multiple visits"))
+
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Figure 4: Compare total number in numerator (across specialties) to distinct number patients x mean specialties seen\n\n")
+cat("\n\nDots from Table 4A data for individual years.  Line shows y=x")
+
+
+num_count_large <-
+  numerator_specialty_n %>%
+  group_by(specialty, visit_year) %>%
+  summarise(num = sum(n)) %>%
+  group_by(visit_year) %>%
+  summarise(total_num = sum(num)) %>%
+  collect_new()
+
+num_count %>%
+  inner_join(num_count_large) %>%
+  inner_join(spec_count) %>%
+  mutate(mult_num = mean_spec * num) %>%
+  filter(visit_year > 0) %>%
+  ggplot(aes(x = total_num, y = mult_num)) +
+  geom_point() +
+  geom_abline() +
+  theme_bw() +
+  labs(x = "Sum of Distinct Patients across all Specialties, each year", y = "Distinct Patients Overall * Mean Specialties seen per Patient, each year")
+
+cat("\n\n\\newpage\n\n")
+cat("\n\n## Figure 5: Plots of subspecialty referral rates vs calendar year\n\n")
+cat("\n\nThis is a selection of outpatient specialties with larger rates (>1%)\n\n")
+
+denom_count <-
+  denominator_n %>%
+  filter(visit_year > 0) %>%
+  group_by(visit_year) %>%
+  summarise(denom = sum(n))
+
+specialist_tbl <-
+  numerator_specialty_n %>%
+  group_by(specialty, visit_year) %>%
+  summarise(num = sum(n)) %>%
+  inner_join(denom_count) %>%
+  mutate(rate = num * 1.0 / denom) %>%
+  arrange(specialty, visit_year)
+
+
+specialist_tbl %>%
+  filter(specialty %in% c("Adolescent Medicine", "Allergy and Immunology", "Child Neurology", "Dermatology", "Developmental-Behavioral Pediatrics", "Neonatal-Perinatal Medicine", "Pediatric Cardiology", "Pediatric Emergency Medicine", "Pediatric Endocrinology", "Pediatric Gastroenterology", "Pediatric Hematology-Oncology", "Pediatric Nephrology", "Pediatric Pulmonology", "Rehabilitation")) %>%
+  ggplot(aes(x = visit_year, y = rate)) +
+  facet_wrap(~specialty, labeller = label_wrap_gen(10)) +
+  geom_line() +
+  theme_bw() +
+  scale_x_continuous(breaks = c(2012, 2016, 2020)) +
+  scale_y_continuous(label = scales::percent) +
+  labs(x = "Year", y = "Rate of outpatient referral", caption = "Denominator: patients with a general outpatient visit that year or prior year\nNumerator: patients with a subspecialty outpatient visit that year")
+```
+
+
+\newpage
+
+## Table 5: Proportion of children receiving care from a pediatric medical subspecialist in an outpatient department or community-based practice, overall and stratified  by calendar year  
+
+
+```{r table5, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = '', results='asis'}
+denom_count <-
+  denominator_n %>%
+  group_by(visit_year, payer_class) %>%
+  summarise(denom = sum(n))
+
+
+num_count <-
+  numerator_specialty_n %>%
+  group_by(visit_year, specialty, payer_class) %>%
+  summarise(num = sum(n))
+
+
+
+num_count %>%
+  inner_join(denom_count) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  dplyr::select(visit_year, payer_class, specialty, denom, my_str) %>%
+  arrange(visit_year, payer_class, specialty) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Insurer", "Specialty", "Patients in Denominator", "n (%)"), booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit in that year or prior and who were members of that insurer group", "Numerator is all patients in denominator who also had at least one specialist outpatient visit in that year and in that subspecialty"), threeparttable = TRUE)
+```
+
+\newpage
+
+## Table 6: Proportion of children receiving care from a pediatric medical subspecialist in an inpatient or emergency visit, overall and stratified  by calendar year and insurer
+
+
+
+```{r table6, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = ''}
+denom_count <-
+  denominator_n %>%
+  group_by(visit_year, payer_class) %>%
+  summarise(denom = sum(n))
+
+num_count <-
+  results_tbl("final_specialist_other") %>%
+  inner_join(denominator_p1) %>%
+  group_by(visit_year, specialty, payer_class) %>%
+  summarise(num = n_distinct(person_id)) %>%
+  collect_new()
+
+num_count <-
+  results_tbl("final_specialist_other") %>%
+  inner_join(denominator_p1) %>%
+  group_by(specialty, payer_class) %>%
+  summarise(num = n_distinct(person_id)) %>%
+  mutate(visit_year = 0) %>%
+  collect_new() %>%
+  bind_rows(num_count)
+
+num_count %>%
+  inner_join(denom_count) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  arrange(visit_year, payer_class) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  dplyr::select(visit_year, payer_class, specialty, denom, my_str) %>%
+  arrange(visit_year, payer_class, specialty) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Insurer", "Specialty", "Patients in Denominator", "n (%)"), booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit in that year or prior (or overall) and who were members of that insurer group", "Numerator is all patients in denominator who also had at least one specialist inpatient or emergency visit in that year and in that subspecialty"), threeparttable = TRUE)
+```
+
+\newpage
+
+## Table 7: Proportion of children with at least one specialist outpatient, inpatient or emergency encounter by pediatric medical subspecialty
+
+
+
+```{r table7, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = ''}
+num_count_t7 <-
+  numerator_overall %>%
+  group_by(visit_year, specialty, payer_class) %>%
+  summarise(num = n_distinct(person_id)) %>%
+  collect_new()
+
+num_count_t7 <-
+  numerator_overall %>%
+  group_by(specialty, payer_class) %>%
+  summarise(num = n_distinct(person_id)) %>%
+  mutate(visit_year = 0) %>%
+  collect_new() %>%
+  bind_rows(num_count_t7)
+
+num_count_t7 %>%
+  inner_join(denom_count) %>%
+  mutate(my_str = sprintf("%s (%s)", format(num, big.mark = ","), scales::percent(num * 1.0 / denom, accuracy = 0.1))) %>%
+  mutate(my_str = ifelse(num >= 11, my_str, sprintf("<11 (<%s)", scales::percent(11 * 1.0 / denom, accuracy = 0.1)))) %>%
+  arrange(visit_year, payer_class) %>%
+  mutate(visit_year = ifelse(visit_year == 0, "Overall", as.character(visit_year))) %>%
+  dplyr::select(visit_year, payer_class, specialty, denom, my_str) %>%
+  kable(format.args = list(big.mark = ","), col.names = c("Year", "Insurer", "Specialty", "Patients in Denominator", "n (%)"), booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header")) %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit in that year or prior (or overall) and who were members of that insurer group", "Numerator is all patients in denominator who also had at least one specialist outpatient, inpatient or emergency visit in that year and in that subspecialty"), threeparttable = TRUE)
+```
+
+\newpage
+
+## Table 8: Top 10 primary/first position SNOMED codes (with count of events) per pediatric medical subspecialty overall and by insurer based on outpatient visits.  
+
+
+Codes relating to immunization status,  encounter/followup status, and well child visits are dropped.
+
+
+
+
+```{r table8, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = '', results='asis'}
+cond_tmp <-
+  results_tbl("visit_conditions_year") %>%
+  inner_join(denominator_p1) %>%
+  compute_new()
+
+cond_specialty_year <-
+  cond_tmp %>%
+  group_by(specialty, visit_year, condition_concept_id, condition_concept_name) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  compute_new()
+
+
+cond_specialty_overall <-
+  cond_tmp %>%
+  group_by(specialty, condition_concept_id, condition_concept_name) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  mutate(payer_class = "Overall") %>%
+  compute_new()
+
+cond_specialty_insurer <-
+  cond_tmp %>%
+  group_by(specialty, payer_class, condition_concept_id, condition_concept_name) %>%
+  summarise(n = n_distinct(person_id)) %>%
+  compute_new()
+
+cond_specialty_insurer <-
+  cond_specialty_overall %>%
+  union_all(cond_specialty_insurer) %>%
+  compute_new()
+#  compute_new(indexes = c("specialty", "visit_year"))
+
+num_count <-
+  numerator_p1 %>%
+  group_by(visit_year, specialty) %>%
+  summarise(num = n_distinct(person_id)) %>%
+  collect_new()
+
+num_count <-
+  numerator_p1 %>%
+  group_by(specialty) %>%
+  summarise(num = n_distinct(person_id)) %>%
+  mutate(visit_year = 0) %>%
+  collect_new() %>%
+  bind_rows(num_count)
+
+num_by_insurer <-
+  numerator_p1 %>%
+  group_by(specialty, payer_class) %>%
+  summarise(num = n_distinct(person_id)) %>%
+  collect_new()
+
+num_by_insurer <-
+  num_count %>%
+  filter(visit_year == 0) %>%
+  dplyr::select(-visit_year) %>%
+  mutate(payer_class = "Overall") %>%
+  bind_rows(num_by_insurer)
+
+
+top10_insurer <-
+  cond_specialty_insurer %>%
+  group_by(payer_class, specialty) %>%
+  arrange(desc(n)) %>%
+  mutate(rank = row_number()) %>%
+  filter(rank %in% 1:10) %>%
+  collect_new() %>%
+  mutate(tmp = ifelse(n >= 11, format(n, big.mark = ","), "<11")) %>%
+  mutate(snomed = sprintf("%s (%s)", condition_concept_name, tmp))
+
+top10_insurer %>%
+  dplyr::select(rank, payer_class, snomed, specialty) %>%
+  inner_join(num_by_insurer) %>%
+  arrange(specialty, payer_class, rank) %>%
+  rename(denominator = num) %>%
+  mutate(denominator = ifelse(denominator < 11, "<11", format(denominator, big.mark = ","))) %>%
+  dplyr::select(payer_class, specialty, denominator, rank, snomed) %>%
+  kable(col.names = c("Insurer", "Specialty", "Denom", "Rank", "Diagnosis (n)"), format.args = list(big.mark = ","), booktabs = T, longtable = T, align = "l") %>%
+  kable_styling(latex_options = c("striped", "repeat_header"), font_size = 7, full_width = F) %>%
+  column_spec(5, width = "6cm") %>%
+  footnote(general_title = "", general = c("Denominator is all patients with generalist outpatient visit in that subspecialty for that insurer class (or overall) (see table 5)", "Numerator is all patients in denominator who also had at least one specialist outpatient outpatient visit for that diagnosis"), threeparttable = TRUE)
+```
+
+\newpage
+
+## Table 9: Regression analysis of referral patterns
+
+The following ignores the repeated measures since each person can belong to at least one denominator year.  Computing those effects isn't trivial as there are almost two million distinct patients.  
+
+```{r table9, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE,  knitr.kable.NA = '', results='asis'}
+any_specialist_y <-
+  numerator_p1 %>%
+  distinct(visit_year, person_id) %>%
+  mutate(has_any_visit = 1) %>%
+  compute_new()
+
+first_specialist_y <-
+  any_specialist_y %>%
+  group_by(person_id) %>%
+  summarise(visit_year = min(visit_year)) %>%
+  mutate(has_first_visit = 1) %>%
+  compute_new()
+
+
+regression_data <-
+  denominator_p1 %>%
+  group_by(person_id, visit_year, age_yr) %>%
+  summarise(age_yr = min(age_yr)) %>%
+  inner_join(age_tbl, copy = TRUE) %>%
+  inner_join(denominator_p1) %>%
+  add_site() %>%
+  distinct(person_id, age_cat, gender_concept_name, eth_cat, payer_class, visit_year, site) %>%
+  ungroup() %>%
+  left_join(any_specialist_y) %>%
+  mutate(has_any_visit = case_when(is.na(has_any_visit) ~ 0, TRUE ~ has_any_visit)) %>%
+  left_join(first_specialist_y) %>%
+  mutate(has_first_visit = case_when(is.na(has_first_visit) ~ 0, TRUE ~ has_first_visit)) %>%
+  group_by(age_cat, gender_concept_name, eth_cat, payer_class, visit_year, site) %>%
+  summarise(denom = n(), sum_first = sum(has_first_visit), sum_any = sum(has_any_visit)) %>%
+  collect_new() %>%
+  ungroup()
+
+
+
+regression_data <-
+  regression_data %>%
+  mutate(year = factor(visit_year)) %>%
+  mutate(site = factor(site)) %>%
+  mutate(eth_cat = factor(eth_cat))
+
+regression_data$age_cat <-
+  factor(regression_data$age_cat, levels = c("<1 (infants)", "1 – 4 (early childhood)", "5 – 11 (middle childhood)", "12 – 17 (adolescence)", "18 – 20 (young adulthood)"))
+
+levels(regression_data$site) <- LETTERS[1:8]
+regression_data$eth_cat <- relevel(regression_data$eth_cat, "White, non-Hispanic")
+
+g_any <-
+  glm(cbind(sum_any, denom - sum_any) ~ gender_concept_name + age_cat + eth_cat + year + payer_class + site, family = "quasibinomial", data = regression_data)
+
+any_tbl <-
+  g_any %>%
+  tidy() %>%
+  mutate(any_str = sprintf("%0.2f (%0.2f-%0.2f)", exp(estimate), exp(estimate - 1.96 * std.error), exp(estimate + 1.96 * std.error))) %>%
+  mutate(p_any = round(p.value, 3)) %>%
+  dplyr::select(term, any_str, p_any)
+
+g_new <-
+  glm(cbind(sum_first, denom - sum_first) ~ gender_concept_name + age_cat + eth_cat + year + payer_class + site, family = "quasibinomial", data = regression_data)
+
+new_tbl <-
+  g_new %>%
+  tidy() %>%
+  mutate(new_str = sprintf("%0.2f (%0.2f-%0.2f)", exp(estimate), exp(estimate - 1.96 * std.error), exp(estimate + 1.96 * std.error))) %>%
+  mutate(p_new = round(p.value, 3)) %>%
+  dplyr::select(term, new_str, p_new)
+
+model_tbl <-
+  any_tbl %>%
+  left_join(new_tbl) %>%
+  mutate(term = str_replace(term, "age_cat", "")) %>%
+  mutate(term = str_replace(term, "gender_concept_name", "")) %>%
+  mutate(term = str_replace(term, "eth_cat", "")) %>%
+  mutate(term = str_replace(term, "year", "")) %>%
+  mutate(term = str_replace(term, "payer_class", "")) %>%
+  mutate(term = str_replace(term, "site", "")) %>%
+  mutate(term = str_replace(term, "MALE", "Male vs Female"))
+
+model_tbl %>%
+  filter(term != "(Intercept)") %>%
+  kable(col.names = c("Term", "Odds Ratio", "p-value", "Odds Ratio", "p-value"), booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "scale_down")) %>%
+  pack_rows("Age (vs <1 Infant)", 2, 5) %>%
+  pack_rows("Race/Eth (vs White, non-Hispanic)", 6, 10) %>%
+  pack_rows("Year (vs 2011)", 11, 20) %>%
+  pack_rows("Payer (vs Private)", 21, 22) %>%
+  pack_rows("Anonymized Site (vs site A)", 23, 29) %>%
+  add_header_above(c(" " = 1, "Any Specialist Outpatient Visit" = 2, "New Specialist Outpatient Visit" = 2))
+```
