@@ -9,7 +9,11 @@ For each pediatric subspecialty, determine the most common diagnoses among patie
 
 ## Structure
 following the PEDSnet "standard framework" structure, the code is divided into various folders including:
-* Code: contains the files that create local database tables from the larger PEDSnet database
-* Specs: contains the CSV files that define codes used to search for relevant terms such as provider and care site specialties
-* Site: used to customize the standard framework implementation for a specific project
-* 
+* **code**: contains the files that create local database tables from the larger PEDSnet database
+* **specs**: contains the CSV files that define codes used to search for relevant terms such as provider and care site specialties
+* **site**: used to customize the standard framework implementation for a specific project
+* **reporting**: contains the R Markdown (.Rmd) folder used to create the PDF report, and the PDF report once created. 
+
+The code structure is idiosyncratic to the PEDSnet implementation of the OHDSI standard.  If you are not using it, the essential code for creating the database tables that the .Rmd expects to see is in code/driver.R, with the specifications in the specs folder.  
+
+The primary author Mitchell Maltenfort, PhD, can be contacted at maltenform@chop.edu.  Further information is available at  [Google Scholar](https://scholar.google.com/citations?user=VM8Bq0sAAAAJ&hl=en)
